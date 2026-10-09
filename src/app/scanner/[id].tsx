@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useCameraPermissions } from 'expo-camera';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Camera,
@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { QrCamera } from '@/components/qr-camera';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TopBar } from '@/components/top-bar';
@@ -228,11 +229,9 @@ export default function ScannerScreen() {
     return (
       <View style={styles.cameraWrapper}>
         <Stack.Screen options={{ title }} />
-        <CameraView
+        <QrCamera
           style={StyleSheet.absoluteFill}
-          facing="back"
           enableTorch={torch}
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
           onBarcodeScanned={phase === 'scanning' ? handleScanned : undefined}
         />
 
