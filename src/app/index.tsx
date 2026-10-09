@@ -1,98 +1,135 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
+import { ArrowRight, QrCode, Store, CircleCheck, type LucideIcon } from 'lucide-react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { GridBackdrop } from '@/components/grid-backdrop';
+import { LogoMark } from '@/components/logo-mark';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+const STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
+  { icon: Store, title: 'Choose a shop', detail: 'Pull the live shop list from Artemis.' },
+  { icon: QrCode, title: 'Scan the QR', detail: 'Hold the return label inside the frame.' },
+  { icon: CircleCheck, title: 'Get confirmation', detail: 'The return is logged the moment it reads.' },
+];
+
+export default function WelcomeScreen() {
+  const router = useRouter();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const version = Constants.expoConfig?.version;
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <ThemedView style={styles.flex}>
+      <GridBackdrop />
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + Spacing[8], paddingBottom: insets.bottom + Spacing[8] },
+        ]}>
+        <View style={styles.column}>
+          <View style={styles.hero}>
+            <LogoMark size={120} />
+            <View style={styles.wordmark}>
+              <ThemedText type="wordmark">ARTEMIS</ThemedText>
+              <ThemedText type="eyebrow" tone="primary">
+                RTS Scanner
+              </ThemedText>
+            </View>
+            <ThemedText tone="textSecondary" style={styles.tagline}>
+              Scan return-to-shop items and log them to Artemis in seconds.
+            </ThemedText>
+          </View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+          <View style={[styles.steps, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+            {STEPS.map((step, index) => (
+              <View
+                key={step.title}
+                style={[
+                  styles.step,
+                  index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
+                ]}>
+                <View style={[styles.stepIcon, { backgroundColor: theme.badgeActive }]}>
+                  <Icon as={step.icon} size={18} tone="primary" />
+                </View>
+                <View style={styles.flex}>
+                  <ThemedText type="rowTitle">{step.title}</ThemedText>
+                  <ThemedText type="meta" tone="textSecondary">
+                    {step.detail}
+                  </ThemedText>
+                </View>
+              </View>
+            ))}
+          </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
+          <View style={styles.footer}>
+            <Button label="Get Started" trailingIcon={ArrowRight} onPress={() => router.push('/shops')} />
+            <ThemedText type="meta" tone="placeholder" style={styles.center}>
+              Camera access is required to read return codes{version ? ` · v${version}` : ''}
+            </ThemedText>
+          </View>
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
     flex: 1,
+  },
+  scroll: {
+    flexGrow: 1,
     justifyContent: 'center',
-    flexDirection: 'row',
+    paddingHorizontal: Spacing[6],
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
+  column: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
+    gap: Spacing[8],
+  },
+  hero: {
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    gap: Spacing[3],
   },
-  heroSection: {
+  wordmark: {
     alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    gap: Spacing[1],
   },
-  title: {
+  tagline: {
+    maxWidth: 280,
     textAlign: 'center',
   },
-  code: {
-    textTransform: 'uppercase',
+  steps: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  step: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[3],
+  },
+  stepIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footer: {
+    gap: Spacing[3],
+  },
+  center: {
+    textAlign: 'center',
   },
 });
