@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ChevronRight, Inbox, Search, SearchX, WifiOff } from 'lucide-react-native';
+import { ChevronRight, CircleHelp, Inbox, Search, SearchX, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -213,11 +213,16 @@ export default function ShopsScreen() {
         ) : (
           <TopBar
             title="Select a Shop"
-            actions={
-              shops.length > 0
+            actions={[
+              ...(shops.length > 0
                 ? [{ icon: Search, label: 'Search shops', onPress: () => setSearching(true) }]
-                : []
-            }
+                : []),
+              {
+                icon: CircleHelp,
+                label: 'How it works',
+                onPress: () => router.push({ pathname: '/tutorial', params: { replay: '1' } }),
+              },
+            ]}
           />
         )}
 

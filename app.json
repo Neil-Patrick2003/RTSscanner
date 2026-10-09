@@ -25,7 +25,7 @@
       "package": "com.neilpatrick.RTSscanner"
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [

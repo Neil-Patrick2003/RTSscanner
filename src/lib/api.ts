@@ -9,8 +9,8 @@
  * rather than hardcoding it here.
  */
 
-      const BASE_URL = 'https://test.artemis.ph/api/v1/public'; // change per environment
-const API_KEY = 'art_4TGgV4OLrHp5NCGXXuAi3pu0IV9F9eEhRiqLbjFj'; // from secure storage
+const BASE_URL = 'https://efb.artemis.ph/api/v1/public'; // change per environment
+const API_KEY = 'art_BgTc2rfztkpwluWK2QxqG0sxY141CGvcNIfnKsI8'; // from secure storage
 
 const headers = {
   Authorization: `Bearer ${API_KEY}`,
@@ -26,8 +26,8 @@ export type Shop = {
 
 export type ScanReturnPayload = {
   shop_id: Shop['id'];
-  /** Raw value decoded from the scanned QR code. */
-  code: string;
+  /** Tracking code decoded from the scanned QR code. */
+  tracking_code: string;
 };
 
 export type ScanReturnResult = {
@@ -68,7 +68,8 @@ export async function scanReturn(payload: ScanReturnPayload): Promise<ScanReturn
   const body = await parseJson(res);
 
   if (!res.ok) {
-    throw new Error(body?.message ?? `Scan failed (${res.status})`);
+    // Artemis sends `{ error }` for lookup/Pancake failures, `{ message }` for validation.
+    throw new Error(body?.error ?? body?.message ?? `Scan failed (${res.status})`);
   }
 
   return {

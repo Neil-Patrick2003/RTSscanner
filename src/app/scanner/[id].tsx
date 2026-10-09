@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState, type PropsWithChildren } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -39,7 +39,7 @@ const SCRIM = 'rgba(0, 0, 0, 0.58)';
 /** Emerald that reads on the camera feed in both themes. */
 const ACCENT = '#34D399';
 
-type Phase = 'scanning' | 'submitting' | 'result';
+type Phase = 'scanning' | 'confirm' | 'submitting' | 'result';
 
 /** Scales in from a still-visible 0.9 so it animates without ever being hidden. */
 function Pop({ children }: PropsWithChildren) {
@@ -97,6 +97,75 @@ function RoundControl({
   );
 }
 
+/** "Mark as returned?" over the paused camera: a popup, not a screen of its own. */
+function ConfirmReturnModal({
+  visible,
+  submitting,
+  title,
+  code,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  submitting: boolean;
+  title: string;
+  code: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      // Android back button: same as Cancel, but not mid-request.
+      onRequestClose={() => !submitting && onCancel()}>
+      <View style={styles.modalBackdrop}>
+        <Pop>
+          <View
+            accessibilityViewIsModal
+            style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={[styles.modalIcon, { backgroundColor: theme.badgeActive }]}>
+              <Icon as={QrCode} size={26} tone="primary" />
+            </View>
+            <ThemedText type="eyebrow" tone="primary">
+              Confirm return
+            </ThemedText>
+            <ThemedText type="pageTitle" style={styles.center}>
+              Mark as returned?
+            </ThemedText>
+            <ThemedText tone="textSecondary" style={styles.center}>
+              This order in {title} will be marked as returned.
+            </ThemedText>
+
+            {code ? (
+              <View style={[styles.codeChip, { backgroundColor: theme.badge }]}>
+                <Icon as={QrCode} size={14} tone="textSecondary" />
+                <ThemedText type="code" tone="textSecondary" numberOfLines={1} selectable>
+                  {code}
+                </ThemedText>
+              </View>
+            ) : null}
+
+            <View style={styles.modalActions}>
+              <Button
+                label={submitting ? 'Recording…' : 'Mark as Returned'}
+                trailingIcon={CircleCheck}
+                loading={submitting}
+                onPress={onConfirm}
+              />
+              <Button label="Cancel" variant="secondary" style={styles.tall} disabled={submitting} onPress={onCancel} />
+            </View>
+          </View>
+        </Pop>
+      </View>
+    </Modal>
+  );
+}
+
 export default function ScannerScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -119,26 +188,29 @@ export default function ScannerScreen() {
     }
   }, [permission, requestPermission]);
 
-  const handleScanned = useCallback(
-    async ({ data }: { data: string }) => {
-      if (handledRef.current) return;
-      handledRef.current = true;
-      setTorch(false);
-      setCode(data);
-      setPhase('submitting');
-      try {
-        const res = await scanReturn({ shop_id: id, code: data });
-        setResult(res);
-        setError(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Scan failed.');
-        setResult(null);
-      } finally {
-        setPhase('result');
-      }
-    },
-    [id]
-  );
+  // A scan only stages the code; nothing is sent until the user confirms.
+  const handleScanned = useCallback(({ data }: { data: string }) => {
+    if (handledRef.current) return;
+    handledRef.current = true;
+    setTorch(false);
+    setCode(data.trim());
+    setPhase('confirm');
+  }, []);
+
+  const confirmReturn = useCallback(async () => {
+    if (!code) return;
+    setPhase('submitting');
+    try {
+      const res = await scanReturn({ shop_id: id, tracking_code: code });
+      setResult(res);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Scan failed.');
+      setResult(null);
+    } finally {
+      setPhase('result');
+    }
+  }, [id, code]);
 
   const scanAgain = useCallback(() => {
     handledRef.current = false;
@@ -150,8 +222,9 @@ export default function ScannerScreen() {
 
   const title = name ?? `Shop #${id}`;
 
-  // --- Live scanning: the camera feed fills the screen, no top bar ---
-  if (permission?.granted && phase === 'scanning') {
+  // --- Live scanning: the camera feed fills the screen, no top bar. It stays behind the
+  // confirmation popup, so cancelling drops straight back into scanning. ---
+  if (permission?.granted && (phase === 'scanning' || phase === 'confirm' || phase === 'submitting')) {
     return (
       <View style={styles.cameraWrapper}>
         <Stack.Screen options={{ title }} />
@@ -160,7 +233,7 @@ export default function ScannerScreen() {
           facing="back"
           enableTorch={torch}
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={handleScanned}
+          onBarcodeScanned={phase === 'scanning' ? handleScanned : undefined}
         />
 
         {/* Scrim mask: dims everything except the reticle. */}
@@ -208,6 +281,15 @@ export default function ScannerScreen() {
             onPress={() => setTorch((on) => !on)}
           />
         </View>
+
+        <ConfirmReturnModal
+          visible={phase !== 'scanning'}
+          submitting={phase === 'submitting'}
+          title={title}
+          code={code}
+          onConfirm={confirmReturn}
+          onCancel={scanAgain}
+        />
       </View>
     );
   }
@@ -221,27 +303,29 @@ export default function ScannerScreen() {
       </View>
     );
   } else if (!permission.granted) {
+    // Browsers can't open their own settings page, so a blocked camera needs instructions instead.
+    const blockedOnWeb = Platform.OS === 'web' && !permission.canAskAgain;
     body = (
       <View style={styles.flex}>
         <EmptyState
           icon={Camera}
           title="Camera access required"
-          description="RTS Scanner reads return QR codes through the camera. Nothing is recorded or stored."
+          description={
+            blockedOnWeb
+              ? "Camera access is blocked for this site. Allow it from your browser's site settings, then reload."
+              : 'RTS Scanner reads return QR codes through the camera. Nothing is recorded or stored.'
+          }
         />
         <View style={[styles.actions, { paddingBottom: insets.bottom + Spacing[4] }]}>
-          <Button
-            label={permission.canAskAgain ? 'Allow Camera' : 'Open Settings'}
-            onPress={() => (permission.canAskAgain ? requestPermission() : Linking.openSettings())}
-          />
+          {blockedOnWeb ? (
+            <Button label="Reload" onPress={() => window.location.reload()} />
+          ) : (
+            <Button
+              label={permission.canAskAgain ? 'Allow Camera' : 'Open Settings'}
+              onPress={() => (permission.canAskAgain ? requestPermission() : Linking.openSettings())}
+            />
+          )}
         </View>
-      </View>
-    );
-  } else if (phase === 'submitting') {
-    body = (
-      <View style={styles.centered}>
-        <ActivityIndicator color={theme.primary} />
-        <ThemedText type="pageTitle">Recording return…</ThemedText>
-        <ThemedText tone="textSecondary">{title}</ThemedText>
       </View>
     );
   } else {
@@ -358,6 +442,37 @@ const styles = StyleSheet.create({
   },
   tall: {
     height: 48,
+  },
+
+  // Confirmation popup
+  modalBackdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing[6],
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
+    gap: Spacing[2],
+    padding: Spacing[6],
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  },
+  modalIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing[1],
+  },
+  modalActions: {
+    alignSelf: 'stretch',
+    gap: Spacing[2],
+    marginTop: Spacing[4],
   },
 
   // Camera

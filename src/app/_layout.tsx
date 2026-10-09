@@ -57,6 +57,7 @@ export default function RootLayout() {
       {/* Every screen draws its own TopBar, like the Creatives Tracker. */}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors[scheme].background } }}>
         <Stack.Screen name="index" options={{ animation: 'fade' }} />
+        <Stack.Screen name="tutorial" />
         <Stack.Screen name="shops" />
         <Stack.Screen name="scanner/[id]" />
       </Stack>

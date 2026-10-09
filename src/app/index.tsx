@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { ArrowRight, QrCode, Store, CircleCheck, type LucideIcon } from 'lucide-react-native';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GridBackdrop } from '@/components/grid-backdrop';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { hasSeenTutorial } from '@/lib/tutorial-storage';
 
 const STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
   { icon: Store, title: 'Choose a shop', detail: 'Pull the live shop list from Artemis.' },
@@ -70,7 +71,21 @@ export default function WelcomeScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Button label="Get Started" trailingIcon={ArrowRight} onPress={() => router.push('/shops')} />
+            <Button
+              label="Get Started"
+              trailingIcon={ArrowRight}
+              // First run walks through the tutorial; after that, straight to the shops.
+              onPress={() => router.push(hasSeenTutorial() ? '/shops' : '/tutorial')}
+            />
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={Spacing[2]}
+              onPress={() => router.push('/tutorial')}
+              style={styles.howItWorks}>
+              <ThemedText type="label" tone="primary">
+                How it works
+              </ThemedText>
+            </Pressable>
             <ThemedText type="meta" tone="placeholder" style={styles.center}>
               Camera access is required to read return codes{version ? ` · v${version}` : ''}
             </ThemedText>
@@ -131,5 +146,8 @@ const styles = StyleSheet.create({
   },
   center: {
     textAlign: 'center',
+  },
+  howItWorks: {
+    alignSelf: 'center',
   },
 });
