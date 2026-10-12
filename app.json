@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "byandev",
     "name": "RTSscanner",
     "slug": "RTSscanner",
     "version": "1.0.0",
