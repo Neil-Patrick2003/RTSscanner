@@ -10,6 +10,8 @@ export type ButtonProps = Omit<PressableProps, 'children'> & {
   label: string;
   /** `primary` is the filled emerald button; `secondary` the outlined one. */
   variant?: 'primary' | 'secondary';
+  /** Icon set just before the label, centered with it. */
+  icon?: LucideIcon;
   /** Icon pinned to the right edge, e.g. an arrow. */
   trailingIcon?: LucideIcon;
   loading?: boolean;
@@ -18,6 +20,7 @@ export type ButtonProps = Omit<PressableProps, 'children'> & {
 export function Button({
   label,
   variant = 'primary',
+  icon,
   trailingIcon,
   loading,
   disabled,
@@ -51,9 +54,12 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={fg} />
       ) : (
-        <ThemedText type={primary ? 'button' : 'labelActive'} style={{ color: fg }}>
-          {label}
-        </ThemedText>
+        <View style={styles.label}>
+          {icon && <Icon as={icon} color={fg} />}
+          <ThemedText type={primary ? 'button' : 'labelActive'} style={{ color: fg }}>
+            {label}
+          </ThemedText>
+        </View>
       )}
       {trailingIcon && !loading && (
         <View pointerEvents="none" style={styles.trailing}>
@@ -71,6 +77,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: Radius.md,
     paddingHorizontal: Spacing[4],
+  },
+  label: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
   },
   trailing: {
     position: 'absolute',

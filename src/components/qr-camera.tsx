@@ -8,14 +8,14 @@ export type QrCameraProps = {
   onBarcodeScanned?: (result: { data: string }) => void;
 };
 
-/** Back camera that reports QR codes. The web build has its own implementation (qr-camera.web.tsx). */
+/** Back camera that reports QR codes and shipping-label barcodes. The web build has its own implementation (qr-camera.web.tsx). */
 export function QrCamera({ style, enableTorch, onBarcodeScanned }: QrCameraProps) {
   return (
     <CameraView
       style={style}
       facing="back"
       enableTorch={enableTorch}
-      barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+      barcodeScannerSettings={{ barcodeTypes: ['qr', 'code128', 'code39', 'code93', 'ean13', 'itf14', 'datamatrix'] }}
       onBarcodeScanned={onBarcodeScanned}
     />
   );

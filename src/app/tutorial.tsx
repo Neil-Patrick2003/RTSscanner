@@ -1,12 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowRight,
-  ChevronRight,
   CircleAlert,
   CircleCheck,
   QrCode,
   RotateCcw,
-  Search,
   X,
   Zap,
   type LucideIcon,
@@ -40,17 +38,8 @@ type Step = {
 
 const STEPS: Step[] = [
   {
-    title: 'Choose the shop',
-    description: 'Tap the shop the returned items belong to. The list comes live from Artemis.',
-    tips: [
-      { icon: Search, text: 'Use the search icon to find a shop by name or address.' },
-      { icon: RotateCcw, text: 'Pull down on the list to refresh it.' },
-    ],
-    preview: () => <ShopListPreview />,
-  },
-  {
     title: 'Scan the QR code',
-    description: 'Hold the return label inside the frame. The app reads it on its own, no button needed.',
+    description: 'Hold the return label inside the frame. The app reads it on its own and Artemis finds the shop from the tracking code, so there is no shop to pick.',
     tips: [
       { icon: Zap, text: 'Too dark? Turn on the torch with the lightning button.' },
       { icon: QrCode, text: 'Only QR codes are read. Keep the label flat and steady.' },
@@ -68,10 +57,10 @@ const STEPS: Step[] = [
   },
   {
     title: 'Check the result',
-    description: 'A green check means the return is logged in Artemis. The scanned code is shown below it.',
+    description: 'A green check means the return is logged in Artemis. The detected shop and the scanned code are shown below it.',
     tips: [
       { icon: CircleCheck, text: '"Return recorded" means you are done with that item.' },
-      { icon: ArrowRight, text: 'Tap "Scan Another" to continue with the same shop.' },
+      { icon: ArrowRight, text: 'Tap "Scan Another" to scan the next parcel.' },
     ],
     preview: () => <ResultPreview success />,
   },
@@ -80,7 +69,7 @@ const STEPS: Step[] = [
     description: 'A red alert means the return was not logged. The message tells you why.',
     tips: [
       { icon: RotateCcw, text: 'Tap "Scan Another" and try the same label again.' },
-      { icon: CircleAlert, text: 'Still failing? Check the shop is correct and you are online.' },
+      { icon: CircleAlert, text: 'Still failing? Check you are online and the order exists in Artemis.' },
     ],
     preview: () => <ResultPreview />,
   },
@@ -100,11 +89,11 @@ export default function TutorialScreen() {
   function finish() {
     markTutorialSeen();
     if (replay && router.canGoBack()) {
-      // Opened from the shop list's help button: go back to where the user was.
+      // Opened from "How it works": go back to where the user was.
       router.back();
     } else {
-      // Replace so Back from the shop list returns to the welcome screen, not the tutorial.
-      router.replace('/shops');
+      // Replace so Back from the scan tab returns to the welcome screen, not the tutorial.
+      router.replace('/scan');
     }
   }
 
@@ -199,35 +188,6 @@ export default function TutorialScreen() {
 }
 
 /* ---------- Mini previews of the real screens ---------- */
-
-function ShopListPreview() {
-  const theme = useTheme();
-  const shops = ['Artemis Makati', 'Artemis Cebu', 'Artemis Davao'];
-
-  return (
-    <View style={[styles.mock, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      {shops.map((shop, i) => (
-        <View
-          key={shop}
-          style={[
-            styles.mockRow,
-            { borderBottomColor: theme.divider },
-            i === 0 && { backgroundColor: theme.badgeActive },
-          ]}>
-          <View style={[styles.mockAvatar, { backgroundColor: i === 0 ? theme.surface : theme.badgeActive }]}>
-            <ThemedText type="labelActive" tone="primary">
-              {shop.split(' ')[1].charAt(0)}
-            </ThemedText>
-          </View>
-          <ThemedText type="rowTitle" style={styles.flex} numberOfLines={1}>
-            {shop}
-          </ThemedText>
-          <Icon as={ChevronRight} size={16} tone={i === 0 ? 'primary' : 'chevron'} />
-        </View>
-      ))}
-    </View>
-  );
-}
 
 function ScannerPreview() {
   const corner = { borderColor: '#34D399' };
@@ -375,30 +335,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-  },
-
-  // Shop list preview
-  mock: {
-    width: '100%',
-    maxWidth: 300,
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    overflow: 'hidden',
-  },
-  mockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing[3],
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[2],
-    borderBottomWidth: 1,
-  },
-  mockAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   // Scanner preview (camera context: fixed dark colors)

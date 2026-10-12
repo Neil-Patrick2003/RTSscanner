@@ -12,13 +12,15 @@ import type { QrCameraProps } from './qr-camera';
 type Detector = { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
 
 const SCAN_INTERVAL_MS = 150;
+/** Same set as the native camera: QR plus common shipping-label barcodes. */
+const FORMATS = ['qr_code', 'code_128', 'code_39', 'code_93', 'ean_13', 'itf', 'data_matrix'] as const;
 
 async function createDetector(): Promise<Detector> {
   const Native = (globalThis as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
-  if (Native) return new Native({ formats: ['qr_code'] });
+  if (Native) return new Native({ formats: [...FORMATS] });
   // Safari/Firefox have no BarcodeDetector; the ponyfill decodes with ZXing (WebAssembly).
   const { BarcodeDetector } = await import('barcode-detector/ponyfill');
-  return new BarcodeDetector({ formats: ['qr_code'] });
+  return new BarcodeDetector({ formats: [...FORMATS] });
 }
 
 /** Best effort: browsers that don't support a constraint just ignore it. */

@@ -15,8 +15,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { hasSeenTutorial } from '@/lib/tutorial-storage';
 
 const STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
-  { icon: Store, title: 'Choose a shop', detail: 'Pull the live shop list from Artemis.' },
   { icon: QrCode, title: 'Scan the QR', detail: 'Hold the return label inside the frame.' },
+  { icon: Store, title: 'Shop is detected', detail: 'Artemis finds the shop from the tracking code.' },
   { icon: CircleCheck, title: 'Get confirmation', detail: 'The return is logged the moment it reads.' },
 ];
 
@@ -74,8 +74,8 @@ export default function WelcomeScreen() {
             <Button
               label="Get Started"
               trailingIcon={ArrowRight}
-              // First run walks through the tutorial; after that, straight to the shops.
-              onPress={() => router.push(hasSeenTutorial() ? '/shops' : '/tutorial')}
+              // First run walks through the tutorial; after that, straight to the dashboard.
+              onPress={() => router.push(hasSeenTutorial() ? '/dashboard' : '/tutorial')}
             />
             <Pressable
               accessibilityRole="button"
