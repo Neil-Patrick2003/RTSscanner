@@ -9,8 +9,8 @@
  * rather than hardcoding it here.
  */
 
-const BASE_URL = 'https://ozfdv0rbfg.sharedwithexpose.com/api/v1/public'; // change per environment
-const API_KEY = 'art_DSjNwyWe2YCjvw0rnjdKs1LXtOczt0RAibJfBOMy'; // from secure storage
+const BASE_URL = 'https://efb.on-forge.com/api/v1/public'; // change per environment
+const API_KEY = 'art_BgTc2rfztkpwluWK2QxqG0sxY141CGvcNIfnKsI8'; // from secure storage
 
 const headers = {
   Authorization: `Bearer ${API_KEY}`,

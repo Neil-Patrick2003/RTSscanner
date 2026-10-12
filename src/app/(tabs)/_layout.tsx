@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router/js-tabs';
-import { LayoutGrid, List, ScanBarcode, type LucideIcon } from 'lucide-react-native';
+import { LayoutGrid, ScanBarcode, type LucideIcon } from 'lucide-react-native';
 import { StyleSheet, View, type ColorValue } from 'react-native';
 
 import { Icon } from '@/components/ui/icon';
@@ -33,7 +33,6 @@ export default function TabsLayout() {
       }}>
       <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: tabIcon(LayoutGrid) }} />
       <Tabs.Screen name="scan" options={{ title: 'Scan', tabBarIcon: tabIcon(ScanBarcode) }} />
-      <Tabs.Screen name="summary" options={{ title: 'Summary', tabBarIcon: tabIcon(List) }} />
     </Tabs>
   );
 }

@@ -218,6 +218,8 @@ export default function DashboardScreen() {
     if (!summary) return null;
 
     const products = summary.products;
+    // A filtered list would not add up to the day's total, so only show it unfiltered.
+    const showTotal = !query.trim();
     return (
       <View style={[styles.body, loading && styles.stale]}>
         <View style={styles.tiles}>
@@ -254,8 +256,22 @@ export default function DashboardScreen() {
             ) : (
               <View style={[styles.list, { borderColor: theme.border, backgroundColor: theme.surface }]}>
                 {visible.map((product, i) => (
-                  <ProductRow key={product.id ?? 'unassigned'} product={product} last={i === visible.length - 1} />
+                  <ProductRow
+                    key={product.id ?? 'unassigned'}
+                    product={product}
+                    last={!showTotal && i === visible.length - 1}
+                  />
                 ))}
+                {showTotal && (
+                  <View style={[styles.totalRow, { backgroundColor: theme.badgeActive }]}>
+                    <ThemedText type="labelActive" tone="primary" style={styles.flex}>
+                      Total
+                    </ThemedText>
+                    <ThemedText type="pageTitle" tone="primary" style={styles.count}>
+                      {summary.total}
+                    </ThemedText>
+                  </View>
+                )}
               </View>
             )}
           </>
@@ -410,6 +426,12 @@ const styles = StyleSheet.create({
     minWidth: 28,
     textAlign: 'right',
     fontVariant: ['tabular-nums'],
+  },
+  totalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing[4],
+    paddingVertical: 14,
   },
   skeleton: {
     paddingTop: Spacing[4],
