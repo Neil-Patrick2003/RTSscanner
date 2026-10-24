@@ -30,9 +30,9 @@ const CARD_RADIUS = 16;
 
 /**
  * idle: camera preview is live but not reading. armed: the next code in the frame is read.
- * confirm/submitting/result: the popup over the card.
+ * submitting/result: the popup over the card.
  */
-type Phase = 'idle' | 'armed' | 'confirm' | 'submitting' | 'result';
+type Phase = 'idle' | 'armed' | 'submitting' | 'result';
 
 /** Scales in from a still-visible 0.9 so it animates without ever being hidden. */
 function Pop({ children }: PropsWithChildren) {
@@ -59,13 +59,12 @@ function Corner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
   return <View style={[styles.corner, styles[position]]} />;
 }
 
-/** Confirm, sending and result, all in one popup over the camera card. */
+/** Sending and result, all in one popup over the camera card. */
 function ScanModal({
   phase,
   code,
   result,
   error,
-  onConfirm,
   onScanAnother,
   onClose,
 }: {
@@ -73,12 +72,11 @@ function ScanModal({
   code: string | null;
   result: ScanReturnResult | null;
   error: string | null;
-  onConfirm: () => void;
   onScanAnother: () => void;
   onClose: () => void;
 }) {
   const theme = useTheme();
-  const visible = phase === 'confirm' || phase === 'submitting' || phase === 'result';
+  const visible = phase === 'submitting' || phase === 'result';
   const submitting = phase === 'submitting';
   const isResult = phase === 'result';
   const isSuccess = isResult && !error;
@@ -95,10 +93,10 @@ function ScanModal({
       transparent
       animationType="fade"
       statusBarTranslucent
-      // Android back button: same as Cancel / Done, but not mid-request.
+      // Android back button: same as Done, but not mid-request.
       onRequestClose={() => !submitting && onClose()}>
       <View style={styles.modalBackdrop}>
-        <Pop key={phase === 'result' ? 'result' : 'confirm'}>
+        <Pop key={phase === 'result' ? 'result' : 'submitting'}>
           <View
             accessibilityViewIsModal
             style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -110,10 +108,10 @@ function ScanModal({
               />
             </View>
             <ThemedText type="eyebrow" style={{ color: tone.fg }}>
-              {!isResult ? 'Confirm return' : isSuccess ? 'Return recorded' : 'Not recorded'}
+              {!isResult ? 'Recording return' : isSuccess ? 'Return recorded' : 'Not recorded'}
             </ThemedText>
             <ThemedText type="pageTitle" style={styles.center}>
-              {!isResult ? 'Mark as returned?' : isSuccess ? 'All done' : "Couldn't record"}
+              {!isResult ? 'Marking as returned…' : isSuccess ? 'All done' : "Couldn't record"}
             </ThemedText>
             <ThemedText tone="textSecondary" style={styles.center}>
               {!isResult
@@ -148,15 +146,7 @@ function ScanModal({
                   <Button label="Done" variant="secondary" style={styles.tall} onPress={onClose} />
                 </>
               ) : (
-                <>
-                  <Button
-                    label={submitting ? 'Recording…' : 'Mark as Returned'}
-                    trailingIcon={CircleCheck}
-                    loading={submitting}
-                    onPress={onConfirm}
-                  />
-                  <Button label="Cancel" variant="secondary" style={styles.tall} disabled={submitting} onPress={onClose} />
-                </>
+                <Button label="Recording…" loading />
               )}
             </View>
           </View>
@@ -207,19 +197,15 @@ export default function ScanScreen() {
     setPhase('armed');
   }, []);
 
-  // A scan only stages the code; nothing is sent until the user confirms.
-  const handleScanned = useCallback(({ data }: { data: string }) => {
+  // A scan is sent right away; the popup shows progress and then the result.
+  const handleScanned = useCallback(async ({ data }: { data: string }) => {
     if (handledRef.current) return;
     handledRef.current = true;
-    setCode(data.trim());
-    setPhase('confirm');
-  }, []);
-
-  const confirmReturn = useCallback(async () => {
-    if (!code) return;
+    const scanned = data.trim();
+    setCode(scanned);
     setPhase('submitting');
     try {
-      const res = await scanReturn({ tracking_code: code });
+      const res = await scanReturn({ tracking_code: scanned });
       setResult(res);
       setError(null);
     } catch (e) {
@@ -228,7 +214,7 @@ export default function ScanScreen() {
     } finally {
       setPhase('result');
     }
-  }, [code]);
+  }, []);
 
   const close = useCallback(() => {
     setTorch(false);
@@ -333,7 +319,6 @@ export default function ScanScreen() {
         code={code}
         result={result}
         error={error}
-        onConfirm={confirmReturn}
         onScanAnother={arm}
         onClose={close}
       />

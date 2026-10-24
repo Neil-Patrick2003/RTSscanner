@@ -5,7 +5,6 @@ import {
   CircleCheck,
   QrCode,
   RotateCcw,
-  X,
   Zap,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -45,15 +44,6 @@ const STEPS: Step[] = [
       { icon: QrCode, text: 'Only QR codes are read. Keep the label flat and steady.' },
     ],
     preview: () => <ScannerPreview />,
-  },
-  {
-    title: 'Confirm the return',
-    description: 'After a scan, a popup asks you to confirm. Nothing is recorded until you tap "Mark as Returned".',
-    tips: [
-      { icon: CircleCheck, text: 'Check the code in the popup, then tap "Mark as Returned".' },
-      { icon: X, text: 'Wrong label? Tap "Cancel" and the camera goes right back to scanning.' },
-    ],
-    preview: () => <ConfirmPreview />,
   },
   {
     title: 'Check the result',
@@ -211,38 +201,6 @@ function ScannerPreview() {
   );
 }
 
-/** The confirmation popup over the paused camera. */
-function ConfirmPreview() {
-  const theme = useTheme();
-
-  return (
-    <View style={styles.camera}>
-      <View style={[styles.reticle, styles.dimmed]}>
-        <Icon as={QrCode} size={56} color="rgba(255,255,255,0.9)" />
-      </View>
-      <View style={styles.popupScrim}>
-        <View style={[styles.popup, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <ThemedText type="eyebrow" tone="primary">
-            Confirm return
-          </ThemedText>
-          <ThemedText type="labelActive">Mark as returned?</ThemedText>
-          <ThemedText type="code" tone="textSecondary" numberOfLines={1}>
-            RTS-2026-00418
-          </ThemedText>
-          <View style={[styles.popupButton, { backgroundColor: theme.button }]}>
-            <ThemedText type="meta" style={{ color: theme.onButton }}>
-              Mark as Returned
-            </ThemedText>
-          </View>
-          <View style={[styles.popupButton, styles.popupCancel, { borderColor: theme.inputBorder }]}>
-            <ThemedText type="meta">Cancel</ThemedText>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 function ResultPreview({ success }: { success?: boolean }) {
   const theme = useTheme();
   const tone = success
@@ -383,38 +341,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  // Confirm preview
-  dimmed: {
-    opacity: 0.5,
-  },
-  popupScrim: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: Radius.lg,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing[3],
-  },
-  popup: {
-    width: '100%',
-    alignItems: 'center',
-    gap: 4,
-    padding: Spacing[3],
-    borderWidth: 1,
-    borderRadius: Radius.md,
-  },
-  popupButton: {
-    alignSelf: 'stretch',
-    height: 26,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  popupCancel: {
-    borderWidth: 1,
   },
 
   // Result preview
