@@ -2,8 +2,10 @@
  * Artemis public API client.
  *
  * Backend routes (Laravel):
- *   POST /shops/scan-return            -> submit a scanned return; the shop is detected from the tracking code
- *   GET  /shops/scan-returns/summary   -> returns scanned on a day, counted per product and per shop
+ *   POST /shops/scan-return            -> save a scanned return; the shop is detected from the tracking code,
+ *                                         and Pancake POS is updated by the evening sync
+ *   GET  /shops/scan-returns/summary   -> returns scanned on a day, counted per product and per shop,
+ *                                         and how many have synced to Pancake POS
  *
  * NOTE: In production, load the API key from secure storage (e.g. expo-secure-store)
  * rather than hardcoding it here.
@@ -61,6 +63,24 @@ export type LastScan = {
   tracking_code: string;
 };
 
+export type PancakeSync = {
+  synced: number;
+  /** Saved, waiting for the evening sync. */
+  pending: number;
+  /** Tried and refused; retried at the next evening sync. */
+  failed: number;
+};
+
+export type FailedScan = {
+  id: number;
+  /** ISO 8601 */
+  scanned_at: string;
+  shop_id: number;
+  shop_name: string;
+  tracking_code: string;
+  error: string | null;
+};
+
 export type ScanSummary = {
   /** YYYY-MM-DD */
   date: string;
@@ -70,6 +90,10 @@ export type ScanSummary = {
   shop_count: number;
   shops: ShopCount[];
   last_scan: LastScan | null;
+  /** Missing from servers older than the evening Pancake sync. */
+  pancake_sync?: PancakeSync;
+  /** The day's latest scans Pancake refused, newest first (up to 50). */
+  failed_scans?: FailedScan[];
 };
 
 async function parseJson(res: Response) {

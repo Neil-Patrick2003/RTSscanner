@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { CircleHelp, Inbox, Search, SearchX, WifiOff } from 'lucide-react-native';
+import { CircleAlert, CircleHelp, Inbox, Search, SearchX, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -18,9 +18,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TopBar } from '@/components/top-bar';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Icon } from '@/components/ui/icon';
 import { FontFamily, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getScanSummary, type ProductCount, type ScanSummary } from '@/lib/api';
+import { getScanSummary, type FailedScan, type PancakeSync, type ProductCount, type ScanSummary } from '@/lib/api';
 import { todayKey } from '@/lib/dates';
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong. Please try again.');
@@ -95,6 +96,72 @@ function StatTile({
       <ThemedText type="meta" style={{ color: sub, opacity: filled ? 0.85 : 1 }}>
         {detail}
       </ThemedText>
+    </View>
+  );
+}
+
+const formatTime = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+/** Where the day's scans are in the evening push to Pancake POS. */
+function SyncCard({ sync }: { sync: PancakeSync }) {
+  const theme = useTheme();
+  const parts = [
+    { label: 'Synced', value: sync.synced, color: theme.approved },
+    { label: 'Waiting', value: sync.pending, color: theme.text },
+    { label: 'Failed', value: sync.failed, color: sync.failed > 0 ? theme.rejected : theme.text },
+  ];
+
+  return (
+    <View
+      accessibilityLabel={`Pancake POS sync: ${sync.synced} synced, ${sync.pending} waiting, ${sync.failed} failed`}
+      style={[styles.syncCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={styles.syncHeader}>
+        <ThemedText type="label" tone="textSecondary" style={styles.flex}>
+          Pancake POS sync
+        </ThemedText>
+        <ThemedText type="meta" tone="textSecondary">
+          Every night at 11:30 PM
+        </ThemedText>
+      </View>
+      <View style={styles.syncParts}>
+        {parts.map((part, i) => (
+          <View
+            key={part.label}
+            style={[styles.syncPart, i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.divider }]}>
+            <ThemedText type="pageTitle" style={[styles.syncValue, { color: part.color }]}>
+              {part.value}
+            </ThemedText>
+            <ThemedText type="meta" tone="textSecondary">
+              {part.label}
+            </ThemedText>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function FailedRow({ scan, last }: { scan: FailedScan; last: boolean }) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.divider }]}>
+      <View style={[styles.badge, { backgroundColor: theme.rejectedFill }]}>
+        <Icon as={CircleAlert} size={18} tone="rejected" />
+      </View>
+      <View style={styles.rowText}>
+        <ThemedText type="code" numberOfLines={1} selectable>
+          {scan.tracking_code}
+        </ThemedText>
+        <ThemedText type="meta" tone="textSecondary" numberOfLines={1}>
+          {scan.shop_name} · {formatTime(scan.scanned_at)}
+        </ThemedText>
+        {scan.error ? (
+          <ThemedText type="meta" tone="rejected">
+            {scan.error}
+          </ThemedText>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -218,6 +285,7 @@ export default function DashboardScreen() {
     if (!summary) return null;
 
     const products = summary.products;
+    const failed = summary.failed_scans ?? [];
     // A filtered list would not add up to the day's total, so only show it unfiltered.
     const showTotal = !query.trim();
     return (
@@ -226,6 +294,26 @@ export default function DashboardScreen() {
           <StatTile filled label="Parcels scanned" value={summary.total} detail={isToday ? 'today' : 'on this day'} />
           <StatTile label="Products" value={summary.product_count} detail="with returned parcels" />
         </View>
+
+        {summary.pancake_sync && summary.total > 0 ? <SyncCard sync={summary.pancake_sync} /> : null}
+
+        {failed.length > 0 ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="sectionLabel" tone="textSecondary" style={styles.flex}>
+                Failed to sync
+              </ThemedText>
+              <ThemedText type="caption" tone="textSecondary">
+                Retried each night
+              </ThemedText>
+            </View>
+            <View style={[styles.list, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+              {failed.map((scan, i) => (
+                <FailedRow key={scan.id} scan={scan} last={i === failed.length - 1} />
+              ))}
+            </View>
+          </>
+        ) : null}
 
         {products.length === 0 ? (
           <EmptyState
@@ -432,6 +520,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing[4],
     paddingVertical: 14,
+  },
+  syncCard: {
+    marginTop: Spacing[3],
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    paddingTop: Spacing[3],
+    paddingBottom: Spacing[2],
+  },
+  syncHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing[4],
+  },
+  syncParts: {
+    flexDirection: 'row',
+    paddingTop: Spacing[2],
+  },
+  syncPart: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing[1],
+  },
+  syncValue: {
+    fontVariant: ['tabular-nums'],
   },
   skeleton: {
     paddingTop: Spacing[4],

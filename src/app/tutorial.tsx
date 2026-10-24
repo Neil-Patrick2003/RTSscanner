@@ -47,16 +47,16 @@ const STEPS: Step[] = [
   },
   {
     title: 'Check the result',
-    description: 'A green check means the return is logged in Artemis. The detected shop and the scanned code are shown below it.',
+    description: 'A green check means the return is saved in Artemis. It syncs to Pancake POS at 11:30 PM, so there is nothing else to do.',
     tips: [
-      { icon: CircleCheck, text: '"Return recorded" means you are done with that item.' },
+      { icon: CircleCheck, text: '"Return saved" means you are done with that item.' },
       { icon: ArrowRight, text: 'Tap "Scan Another" to scan the next parcel.' },
     ],
     preview: () => <ResultPreview success />,
   },
   {
-    title: 'If it isn’t recorded',
-    description: 'A red alert means the return was not logged. The message tells you why.',
+    title: 'If it isn’t saved',
+    description: 'A red alert means the return was not saved. The message tells you why.',
     tips: [
       { icon: RotateCcw, text: 'Tap "Scan Another" and try the same label again.' },
       { icon: CircleAlert, text: 'Still failing? Check you are online and the order exists in Artemis.' },
@@ -213,7 +213,7 @@ function ResultPreview({ success }: { success?: boolean }) {
         <Icon as={success ? CircleCheck : CircleAlert} size={28} color={tone.fg} />
       </View>
       <ThemedText type="eyebrow" style={{ color: tone.fg }}>
-        {success ? 'Return recorded' : 'Not recorded'}
+        {success ? 'Return saved' : 'Not saved'}
       </ThemedText>
       <ThemedText type="rowTitle">{success ? 'All done' : 'Couldn’t record'}</ThemedText>
       <View style={[styles.codeChip, { backgroundColor: theme.surface }]}>

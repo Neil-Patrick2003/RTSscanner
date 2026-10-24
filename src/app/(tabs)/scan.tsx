@@ -108,10 +108,10 @@ function ScanModal({
               />
             </View>
             <ThemedText type="eyebrow" style={{ color: tone.fg }}>
-              {!isResult ? 'Recording return' : isSuccess ? 'Return recorded' : 'Not recorded'}
+              {!isResult ? 'Saving return' : isSuccess ? 'Return saved' : 'Not saved'}
             </ThemedText>
             <ThemedText type="pageTitle" style={styles.center}>
-              {!isResult ? 'Marking as returned…' : isSuccess ? 'All done' : "Couldn't record"}
+              {!isResult ? 'Saving…' : isSuccess ? 'All done' : "Couldn't save"}
             </ThemedText>
             <ThemedText tone="textSecondary" style={styles.center}>
               {!isResult
@@ -146,7 +146,7 @@ function ScanModal({
                   <Button label="Done" variant="secondary" style={styles.tall} onPress={onClose} />
                 </>
               ) : (
-                <Button label="Recording…" loading />
+                <Button label="Saving…" loading />
               )}
             </View>
           </View>

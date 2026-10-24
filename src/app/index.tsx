@@ -17,7 +17,7 @@ import { hasSeenTutorial } from '@/lib/tutorial-storage';
 const STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
   { icon: QrCode, title: 'Scan the QR', detail: 'Hold the return label inside the frame.' },
   { icon: Store, title: 'Shop is detected', detail: 'Artemis finds the shop from the tracking code.' },
-  { icon: CircleCheck, title: 'Get confirmation', detail: 'The return is logged the moment it reads.' },
+  { icon: CircleCheck, title: 'Get confirmation', detail: 'The return is saved the moment it reads.' },
 ];
 
 export default function WelcomeScreen() {
